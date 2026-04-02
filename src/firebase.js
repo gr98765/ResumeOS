@@ -17,10 +17,7 @@ import {
     serverTimestamp,
 } from "firebase/firestore";
 
-// ── Firebase config from .env ─────────────────────────────────────────────────
-// These are PUBLIC values (safe to expose in frontend code)
-// They only control WHICH Firebase project to connect to
-// Your Firestore rules control WHO can read/write
+// ── Firebase config from .env 
 const firebaseConfig = {
     apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
     authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -28,28 +25,24 @@ const firebaseConfig = {
     appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
-// ── Initialize Firebase (runs once when this file is first imported) ──────────
+// ── Initialize Firebase 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// ── PUBLIC: getOrCreateAnonymousUser ─────────────────────────────────────────
+// ── PUBLIC: getOrCreateAnonymousUser
 // Signs in silently. If already signed in (e.g. returning user same browser),
-// Firebase reuses the existing session automatically.
-// Returns the Firebase User object with a uid (unique ID string).
 export async function getOrCreateAnonymousUser() {
     // Check if already signed in
     if (auth.currentUser) return auth.currentUser;
 
-    // Wait for auth to initialize (handles page refresh case)
     const user = await new Promise((resolve) => {
         const unsub = onAuthStateChanged(auth, (u) => {
-            unsub(); // stop listening after first event
+            unsub();
             resolve(u);
         });
     });
 
-    // Already has a session (returning user)
     if (user) return user;
 
     // First time — create anonymous account silently
@@ -57,24 +50,22 @@ export async function getOrCreateAnonymousUser() {
     return credential.user;
 }
 
-// ── PUBLIC: saveResume ────────────────────────────────────────────────────────
+// ── PUBLIC: saveResume
 // Saves the parsed resume JSON to Firestore.
-// Returns a shareId — a short random string used in the shareable URL.
 // Structure in Firestore:
 //   resumes/{shareId} → { ownerId, resumeData, createdAt, shareId }
 export async function saveResume(resumeData) {
-    // Make sure we have an anonymous user first
+
     const user = await getOrCreateAnonymousUser();
 
     // Generate a short random ID for the shareable URL
-    // e.g. "xK9mP2" — 6 chars, URL-safe
     const shareId = generateShareId();
 
     const docRef = doc(db, "resumes", shareId);
 
     await setDoc(docRef, {
         shareId,
-        ownerId: user.uid,          // who owns this (for write rules)
+        ownerId: user.uid,          // who owns this 
         resumeData,                 // the full parsed JSON
         createdAt: serverTimestamp(), // Firestore server time
         views: 0,                   // track how many times it's been viewed
@@ -83,10 +74,8 @@ export async function saveResume(resumeData) {
     return shareId;
 }
 
-// ── PUBLIC: loadResume ────────────────────────────────────────────────────────
+// ── PUBLIC: loadResume
 // Loads a resume by its shareId.
-// Used when someone visits /r/xK9mP2 — no auth needed to read.
-// Returns the resumeData object, or null if not found.
 export async function loadResume(shareId) {
     const docRef = doc(db, "resumes", shareId);
     const snap = await getDoc(docRef);
@@ -97,9 +86,8 @@ export async function loadResume(shareId) {
     return data.resumeData;
 }
 
-// ── PUBLIC: isCurrentUserOwner ────────────────────────────────────────────────
+// ── PUBLIC: isCurrentUserOwner 
 // Check if the currently signed-in anonymous user owns a given resume.
-// Used to show/hide the "Edit" and "Delete" buttons.
 export async function isCurrentUserOwner(shareId) {
     const user = auth.currentUser;
     if (!user) return false;
@@ -111,9 +99,8 @@ export async function isCurrentUserOwner(shareId) {
     return snap.data().ownerId === user.uid;
 }
 
-// ── PRIVATE: generateShareId ──────────────────────────────────────────────────
+// ── PRIVATE: generateShareId 
 // Generates a short, URL-safe random ID like "xK9mP2"
-// Not cryptographically secure — fine for resume sharing
 function generateShareId(length = 6) {
     const chars = "abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789";
     // ^ removed confusable chars: 0/O, 1/l/I
