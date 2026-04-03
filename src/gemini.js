@@ -6,7 +6,7 @@
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 const BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models";
 
-// ─── Helper: raw POST to Gemini ───────────────────────────────────────────────
+// ─── Helper: raw POST to Gemini 
 // This is the core function all three public functions use under the hood.
 // model: which Gemini model to use
 // systemPrompt: the "role" / instructions we give the AI
@@ -47,8 +47,7 @@ async function callGemini(model, systemPrompt, userMessage) {
     return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
 }
 
-// ─── Helper: multi-turn chat POST to Gemini ───────────────────────────────────
-// Same as above but supports full conversation history for the chat panel
+// ─── Helper: multi-turn chat POST to Gemini 
 async function callGeminiChat(model, systemPrompt, history) {
     const url = `${BASE_URL}/${model}:generateContent?key=${API_KEY}`;
 
@@ -79,10 +78,10 @@ async function callGeminiChat(model, systemPrompt, history) {
     return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
 }
 
-// ─── PUBLIC FUNCTION 1: parseResume ───────────────────────────────────────────
+// ─── PUBLIC FUNCTION 1: parseResume 
 // Takes raw text extracted from the PDF.
 // Returns a structured JavaScript object with all resume sections.
-// Uses Flash-LITE (cheaper, faster) since this is a one-time extraction.
+// Uses Flash-LITE  since this is a one-time extraction.
 export async function parseResume(rawText) {
     const systemPrompt = `You are a precise resume parser. Extract information from the resume text and return ONLY valid JSON — no markdown, no code fences, no explanation. Just the raw JSON object.`;
 
@@ -138,12 +137,8 @@ ${rawText}`;
     return JSON.parse(cleaned);
 }
 
-// ─── PUBLIC FUNCTION 2: chat ───────────────────────────────────────────────────
-// Powers the main chat panel. Takes:
-//   resumeData: the parsed JSON object (injected as context)
-//   history: array of past messages in Gemini format
-//   mode: "general" | "rewrite" | "interview"
-// Returns the AI's response string.
+// ─── PUBLIC FUNCTION 2: chat 
+
 export async function chat(resumeData, history, mode = "general") {
     const resumeContext = JSON.stringify(resumeData, null, 2);
 
@@ -181,9 +176,9 @@ Ask ONE behavioral or technical interview question at a time, personalized to th
     );
 }
 
-// ─── PUBLIC FUNCTION 3: deAIify ───────────────────────────────────────────────
+// ─── PUBLIC FUNCTION 3: deAIify 
 // Takes AI-generated or generic resume text and makes it sound human again.
-// This is our UNIQUE differentiator — no other tool does this.
+// This is our UNIQUE differentiator 
 export async function deAIify(text, resumeData) {
     const systemPrompt = `You are an expert at making AI-generated text sound genuinely human and personal. Your job is to preserve the meaning but eliminate robotic patterns.`;
 
@@ -205,14 +200,14 @@ Return only the humanized version, no explanation.`;
     return await callGemini("gemini-2.5-flash", systemPrompt, userMessage);
 }
 
-// ─── PUBLIC FUNCTION 4: analyseResume ─────────────────────────────────────────
+// ─── PUBLIC FUNCTION 4: analyseResume 
 // Scores every bullet point in the resume as strong / weak / critical.
 // Returns structured JSON with overall score, per-bullet scores, reasons, rewrites.
 export async function analyseResume(resumeData) {
     const systemPrompt = `You are a brutally honest senior recruiter and career coach with 15 years experience. 
 You score resume bullet points with zero fluff. Return ONLY valid JSON — no markdown, no explanation, just raw JSON.`;
 
-    // Flatten all bullets with their context
+
     const bullets = resumeData.experience.flatMap((exp) =>
         (exp.bullets || []).map((bullet) => ({
             company: exp.company,
