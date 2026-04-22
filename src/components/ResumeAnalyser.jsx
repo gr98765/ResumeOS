@@ -6,11 +6,11 @@ import { useState } from "react";
 import { analyseResume } from "../gemini.js";
 
 export default function ResumeAnalyser({ resumeData }) {
-  const [state, setState]           = useState("idle");    // idle | loading | done | error
-  const [analysis, setAnalysis]     = useState(null);
+  const [state, setState] = useState("idle");    // idle | loading | done | error
+  const [analysis, setAnalysis] = useState(null);
   const [openBullet, setOpenBullet] = useState(null);      // which bullet drawer is open
-  const [applied, setApplied]       = useState({});        // which rewrites have been applied
-  const [errorMsg, setErrorMsg]     = useState("");
+  const [applied, setApplied] = useState({});        // which rewrites have been applied
+  const [errorMsg, setErrorMsg] = useState("");
 
   // ── Run the analysis ──────────────────────────────────────────────────────
   async function handleAnalyse() {
@@ -27,17 +27,17 @@ export default function ResumeAnalyser({ resumeData }) {
 
   // ── Score config ──────────────────────────────────────────────────────────
   const scoreConfig = {
-    strong:   { label: "Strong",   emoji: "✅", color: "#00f5a0", bg: "rgba(0,245,160,0.08)",   border: "rgba(0,245,160,0.25)"   },
-    weak:     { label: "Weak",     emoji: "⚠️", color: "#f59e0b", bg: "rgba(245,158,11,0.08)",  border: "rgba(245,158,11,0.3)"   },
-    critical: { label: "Critical", emoji: "❌", color: "#f87171", bg: "rgba(248,113,113,0.08)", border: "rgba(248,113,113,0.3)"  },
+    strong: { label: "Strong", emoji: "✅", color: "#00f5a0", bg: "rgba(0,245,160,0.08)", border: "rgba(0,245,160,0.25)" },
+    weak: { label: "Weak", emoji: "⚠️", color: "#f59e0b", bg: "rgba(245,158,11,0.08)", border: "rgba(245,158,11,0.3)" },
+    critical: { label: "Critical", emoji: "❌", color: "#f87171", bg: "rgba(248,113,113,0.08)", border: "rgba(248,113,113,0.3)" },
   };
 
   // Count bullets by score
   const counts = analysis
     ? analysis.bullets.reduce(
-        (acc, b) => { acc[b.score] = (acc[b.score] || 0) + 1; return acc; },
-        { strong: 0, weak: 0, critical: 0 }
-      )
+      (acc, b) => { acc[b.score] = (acc[b.score] || 0) + 1; return acc; },
+      { strong: 0, weak: 0, critical: 0 }
+    )
     : null;
 
   // ── IDLE STATE: just show the button ──────────────────────────────────────
@@ -103,8 +103,8 @@ export default function ResumeAnalyser({ resumeData }) {
                 background: analysis.overallScore >= 70
                   ? "#00f5a0"
                   : analysis.overallScore >= 45
-                  ? "#f59e0b"
-                  : "#f87171",
+                    ? "#f59e0b"
+                    : "#f87171",
               }}
             />
           </div>
@@ -190,7 +190,7 @@ export default function ResumeAnalyser({ resumeData }) {
                         onClick={() => {
                           setApplied((prev) => ({ ...prev, [i]: true }));
                           // Copy to clipboard for easy pasting
-                          navigator.clipboard.writeText(item.rewrite).catch(() => {});
+                          navigator.clipboard.writeText(item.rewrite).catch(() => { });
                         }}
                       >
                         {wasApplied ? "✓ Copied to clipboard" : "Use this rewrite → (copies to clipboard)"}
