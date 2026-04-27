@@ -1,104 +1,103 @@
-// gemini.js — All Gemini API calls live here
-// We use two models strategically to save free-tier quota:
-//   Flash-Lite → fast, cheap, used for parsing (called once, cached)
-//   Flash       → smarter, used for chat (called per message)
+// gemini.js — AI calls using Groq API (free, no billing required)
+// Model: llama-3.3-70b-versatile — fast, smart, free tier
+// Groq free tier: 14,400 requests/day, no credit card needed
 
-const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-const BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models";
+const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
+const MODEL = "llama-3.3-70b-versatile";
 
-// ─── Helper: raw POST to Gemini 
-// This is the core function all three public functions use under the hood.
-// model: which Gemini model to use
-// systemPrompt: the "role" / instructions we give the AI
-// userMessage: what the user (or we) are asking
-async function callGemini(model, systemPrompt, userMessage) {
-    const url = `${BASE_URL}/${model}:generateContent?key=${API_KEY}`;
+// Get API key — from sessionStorage (user's own key) or .env (your dev key)
+const getApiKey = () =>
+    sessionStorage.getItem("groq_api_key") ||
+    import.meta.env.VITE_GROQ_API_KEY ||
+    "";
 
-    const body = {
-        // systemInstruction gives the AI its "personality" for this call
-        systemInstruction: {
-            parts: [{ text: systemPrompt }],
-        },
-        contents: [
-            {
-                role: "user",
-                parts: [{ text: userMessage }],
-            },
-        ],
-        generationConfig: {
-            temperature: 0.7,      // 0 = robotic/deterministic, 1 = creative/random
-            maxOutputTokens: 2048, // max length of response (~1500 words)
-        },
-    };
+// ── Helper: call Groq ─────────────────────────────────────────────────────────
+// Groq uses the OpenAI-compatible API format — very simple
+async function callGroq(systemPrompt, userMessage, temperature = 0.7) {
+    const key = getApiKey();
+    if (!key) throw new Error("No API key found. Please enter your Groq API key.");
 
-    const res = await fetch(url, {
+    const res = await fetch(GROQ_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${key}`,
+        },
+        body: JSON.stringify({
+            model: MODEL,
+            temperature,
+            max_tokens: 2048,
+            messages: [
+                { role: "system", content: systemPrompt },
+                { role: "user", content: userMessage },
+            ],
+        }),
     });
 
     if (!res.ok) {
         const err = await res.json();
-        throw new Error(`Gemini API error: ${err.error?.message || res.statusText}`);
+        throw new Error(err.error?.message || `Groq API error: ${res.statusText}`);
     }
 
     const data = await res.json();
-    // Gemini returns text nested inside candidates → content → parts → text
-    return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    return data.choices?.[0]?.message?.content || "";
 }
 
-// ─── Helper: multi-turn chat POST to Gemini 
-async function callGeminiChat(model, systemPrompt, history) {
-    const url = `${BASE_URL}/${model}:generateContent?key=${API_KEY}`;
+// ── Helper: multi-turn chat ───────────────────────────────────────────────────
+async function callGroqChat(systemPrompt, history, temperature = 0.8) {
+    const key = getApiKey();
+    if (!key) throw new Error("No API key found. Please enter your Groq API key.");
 
-    const body = {
-        systemInstruction: {
-            parts: [{ text: systemPrompt }],
-        },
-        // history is an array of { role: "user"|"model", parts: [{ text }] }
-        contents: history,
-        generationConfig: {
-            temperature: 0.8,
-            maxOutputTokens: 2048,
-        },
-    };
-
-    const res = await fetch(url, {
+    const res = await fetch(GROQ_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${key}`,
+        },
+        body: JSON.stringify({
+            model: MODEL,
+            temperature,
+            max_tokens: 2048,
+            messages: [
+                { role: "system", content: systemPrompt },
+                // Convert our message format to OpenAI format
+                // Our format: { role: "user"|"model", parts: [{ text }] }
+                // Groq format: { role: "user"|"assistant", content: string }
+                ...history.map(m => ({
+                    role: m.role === "model" ? "assistant" : "user",
+                    content: Array.isArray(m.parts) ? m.parts[0].text : m.content,
+                })),
+            ],
+        }),
     });
 
     if (!res.ok) {
         const err = await res.json();
-        throw new Error(`Gemini API error: ${err.error?.message || res.statusText}`);
+        throw new Error(err.error?.message || `Groq API error: ${res.statusText}`);
     }
 
     const data = await res.json();
-    return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    return data.choices?.[0]?.message?.content || "";
 }
 
-// ─── PUBLIC FUNCTION 1: parseResume 
-// Takes raw text extracted from the PDF.
-// Returns a structured JavaScript object with all resume sections.
-// Uses Flash-LITE  since this is a one-time extraction.
+// ── PUBLIC FUNCTION 1: parseResume ───────────────────────────────────────────
 export async function parseResume(rawText) {
-    const systemPrompt = `You are a precise resume parser. Extract information from the resume text and return ONLY valid JSON — no markdown, no code fences, no explanation. Just the raw JSON object.`;
+    const systemPrompt = `You are a precise resume parser. Extract information and return ONLY valid JSON — no markdown, no code fences, no explanation. Just raw JSON.`;
 
     const userMessage = `Parse this resume and return a JSON object with exactly this structure:
 {
   "name": "full name",
-  "email": "email address or null",
+  "email": "email or null",
   "phone": "phone or null",
   "location": "city/country or null",
   "summary": "professional summary in 2-3 sentences (write one if not present)",
-  "skills": ["skill1", "skill2", ...],
+  "skills": ["skill1", "skill2"],
   "experience": [
     {
       "title": "job title",
       "company": "company name",
       "duration": "date range",
-      "bullets": ["achievement 1", "achievement 2", ...]
+      "bullets": ["achievement 1", "achievement 2"]
     }
   ],
   "education": [
@@ -121,41 +120,29 @@ export async function parseResume(rawText) {
 Resume text:
 ${rawText}`;
 
-    const raw = await callGemini(
-        "gemini-2.0-flash-lite", // cheapest free model — saves quota
-        systemPrompt,
-        userMessage
-    );
-
-    // Gemini sometimes wraps JSON in ```json ... ``` even when told not to.
-    // This strips that out safely.
-    const cleaned = raw
-        .replace(/```json\n?/g, "")
-        .replace(/```\n?/g, "")
-        .trim();
-
+    const raw = await callGroq(systemPrompt, userMessage, 0.3);
+    const cleaned = raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
     return JSON.parse(cleaned);
 }
 
-// ─── PUBLIC FUNCTION 2: chat 
-
+// ── PUBLIC FUNCTION 2: chat ───────────────────────────────────────────────────
 export async function chat(resumeData, history, mode = "general") {
     const resumeContext = JSON.stringify(resumeData, null, 2);
 
     const systemPrompts = {
-        general: `You are an expert career coach and resume advisor. You have access to the following resume data:
+        general: `You are an expert career coach and resume advisor. You have access to the following resume:
 
 ${resumeContext}
 
-Answer questions about this person's background honestly and helpfully. Be specific — reference their actual experience, skills, and projects. Be concise but insightful. If asked to improve something, give a concrete rewritten version.`,
+Answer questions about this person's background honestly and helpfully. Be specific — reference their actual experience, skills, and projects. Be concise but insightful.`,
 
-        rewrite: `You are an elite resume writer specializing in making bullet points impactful. You have access to this resume:
+        rewrite: `You are an elite resume writer. You have access to this resume:
 
 ${resumeContext}
 
-When given a bullet point or job description, rewrite it to:
+When given a bullet point, rewrite it to:
 1. Start with a strong action verb
-2. Include a quantifiable metric if possible (estimate if not given: "~X%", "team of N")
+2. Include a quantifiable metric if possible
 3. Show impact, not just responsibility
 4. Be one concise sentence under 20 words
 
@@ -165,48 +152,31 @@ Always give 2-3 rewritten versions for the user to choose from.`,
 
 ${resumeContext}
 
-Ask ONE behavioral or technical interview question at a time, personalized to their actual experience and skills. After they answer, give specific feedback referencing their resume. Then ask the next question. Start by introducing yourself and asking the first question.`,
+Ask ONE behavioral or technical question at a time, personalised to their actual experience. After they answer, give specific feedback referencing their resume. Start by introducing yourself and asking the first question.`,
     };
 
-    // Use the smarter Flash model for chat (better reasoning)
-    return await callGeminiChat(
-        "gemini-2.0-flash",
-        systemPrompts[mode],
-        history
-    );
+    return await callGroqChat(systemPrompts[mode], history);
 }
 
-// ─── PUBLIC FUNCTION 3: deAIify 
-// Takes AI-generated or generic resume text and makes it sound human again.
-// This is our UNIQUE differentiator 
+// ── PUBLIC FUNCTION 3: deAIify ────────────────────────────────────────────────
 export async function deAIify(text, resumeData) {
-    const systemPrompt = `You are an expert at making AI-generated text sound genuinely human and personal. Your job is to preserve the meaning but eliminate robotic patterns.`;
+    const systemPrompt = `You are an expert at making AI-generated text sound genuinely human. Preserve meaning but eliminate robotic patterns.`;
 
-    const userMessage = `The following text is from a resume but sounds too AI-generated, generic, or corporate. 
+    const userMessage = `Make this resume text sound more authentic and human while keeping it professional. Remove buzzwords, use concrete language, natural rhythm.
 
-Make it sound more authentic and human while keeping it professional. Use:
-- Specific, concrete language (not vague buzzwords)
-- Natural sentence rhythm (not perfectly parallel structure)
-- First-person voice where appropriate
-- Real impact over hollow claims
-
-Context about this person: ${resumeData.name}, working in ${resumeData.skills?.slice(0, 3).join(", ")}
+Context: ${resumeData.name}, skills: ${resumeData.skills?.slice(0, 3).join(", ")}
 
 Text to humanize:
 "${text}"
 
 Return only the humanized version, no explanation.`;
 
-    return await callGemini("gemini-2.5-flash", systemPrompt, userMessage);
+    return await callGroq(systemPrompt, userMessage);
 }
 
-// ─── PUBLIC FUNCTION 4: analyseResume 
-// Scores every bullet point in the resume as strong / weak / critical.
-// Returns structured JSON with overall score, per-bullet scores, reasons, rewrites.
+// ── PUBLIC FUNCTION 4: analyseResume ─────────────────────────────────────────
 export async function analyseResume(resumeData) {
-    const systemPrompt = `You are a brutally honest senior recruiter and career coach with 15 years experience. 
-You score resume bullet points with zero fluff. Return ONLY valid JSON — no markdown, no explanation, just raw JSON.`;
-
+    const systemPrompt = `You are a brutally honest senior recruiter with 15 years experience. Score resume bullets with zero fluff. Return ONLY valid JSON — no markdown, no explanation.`;
 
     const bullets = resumeData.experience.flatMap((exp) =>
         (exp.bullets || []).map((bullet) => ({
@@ -216,48 +186,33 @@ You score resume bullet points with zero fluff. Return ONLY valid JSON — no ma
         }))
     );
 
-    const userMessage = `Score each resume bullet point honestly.
+    const userMessage = `Score each resume bullet point.
 
 Return a JSON object with EXACTLY this structure:
 {
   "overallScore": <number 0-100>,
-  "summary": "<2 sentence honest assessment of this resume overall>",
+  "summary": "<2 sentence honest assessment>",
   "bullets": [
     {
-      "original": "<exact bullet text copied from input>",
+      "original": "<exact bullet text>",
       "company": "<company name>",
       "title": "<job title>",
       "score": "<strong OR weak OR critical>",
-      "reason": "<one specific sentence explaining why this score>",
-      "rewrite": "<improved version — start with action verb, add metric, show impact>"
+      "reason": "<one specific sentence why>",
+      "rewrite": "<improved version with action verb and metric>"
     }
   ]
 }
 
-Scoring criteria:
-- STRONG: has strong action verb + measurable metric/result + clear business impact
-- WEAK: missing ONE of: metric, strong action verb, or clear impact — still salvageable  
-- CRITICAL: vague language, passive voice, zero specifics, or pure filler with no value
+Scoring:
+- STRONG: strong action verb + measurable metric + clear impact
+- WEAK: missing one of: metric, strong verb, or clear impact
+- CRITICAL: vague, passive voice, zero specifics, filler
 
-Overall score guide:
-- 80-100: Most bullets are strong, clear metrics throughout
-- 60-79: Mixed quality, some strong but gaps
-- 40-59: Mostly weak, needs significant work
-- 0-39: Critical issues throughout
-
-Bullets to score:
+Bullets:
 ${JSON.stringify(bullets, null, 2)}`;
 
-    const raw = await callGemini(
-        "gemini-2.0-flash",
-        systemPrompt,
-        userMessage
-    );
-
-    const cleaned = raw
-        .replace(/```json\n?/g, "")
-        .replace(/```\n?/g, "")
-        .trim();
-
+    const raw = await callGroq(systemPrompt, userMessage, 0.3);
+    const cleaned = raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
     return JSON.parse(cleaned);
 }
