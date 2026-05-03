@@ -13,8 +13,10 @@ import { extractTextFromPDF } from "./pdfParser.js";
 import { parseResume } from "./gemini.js";
 import { saveResume, loadResume, isCurrentUserOwner } from "./firebase.js";
 import ResumeAnalyser from "./components/ResumeAnalyser.jsx";
+import ApiKeyGate from "./components/ApiKeyGate.jsx";
 
 export default function App() {
+  const [apiKey, setApiKey] = useState(() => sessionStorage.getItem("groq_api_key") || "");
   const [resumeData, setResumeData]   = useState(null);
   const [shareId,    setShareId]      = useState(null);
   const [isOwner,    setIsOwner]      = useState(false);
@@ -124,6 +126,11 @@ export default function App() {
         </button>
       </div>
     );
+  }
+
+  // ── API Key Gate
+  if (!apiKey) {
+    return <ApiKeyGate onKeySubmit={(k) => setApiKey(k)} />;
   }
 
   // ── Upload screen ─────────────────────────────────────────────────────────
