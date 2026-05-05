@@ -5,8 +5,8 @@
 import { useState } from "react";
 
 export default function ApiKeyGate({ onKeySubmit }) {
-  const [key, setKey]       = useState("");
-  const [error, setError]   = useState("");
+  const [key, setKey] = useState("");
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit() {
@@ -69,7 +69,7 @@ export default function ApiKeyGate({ onKeySubmit }) {
         <div style={styles.steps}>
           {[
             { n: "1", text: "Go to", link: "console.groq.com", url: "https://console.groq.com" },
-            { n: "2", text: "Click "Create API key" → copy it" },
+            { n: "2", text: "Click 'Create API key' then copy it" },
             { n: "3", text: "Paste it below and click Continue" },
           ].map((s, i) => (
             <div key={i} style={styles.step}>
