@@ -14,18 +14,18 @@ import { parseResume } from "./gemini.js";
 import { saveResume, loadResume, isCurrentUserOwner } from "./firebase.js";
 
 export default function App() {
-  const [apiKey, setApiKey]       = useState(() => sessionStorage.getItem("groq_api_key") || "");
+  const [apiKey, setApiKey] = useState(() => sessionStorage.getItem("groq_api_key") || "");
   const [resumeData, setResumeData] = useState(null);
-  const [shareId, setShareId]     = useState(null);
-  const [isOwner, setIsOwner]     = useState(false);
+  const [shareId, setShareId] = useState(null);
+  const [isOwner, setIsOwner] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [loadingMsg, setLoadingMsg] = useState("");
   const [activeTab, setActiveTab] = useState("graph");
-  const [copied, setCopied]       = useState(false);
+  const [copied, setCopied] = useState(false);
   const [initError, setInitError] = useState(null);
-  const [view, setView]           = useState("candidate"); // "candidate" | "recruiter"
+  const [view, setView] = useState("candidate");
 
-  // ── On mount: check URL ───────────────────────────────────────────────────
+
   useEffect(() => {
     const path = window.location.pathname;
     const match = path.match(/^\/r\/([a-zA-Z0-9]{6})$/);
