@@ -88,7 +88,6 @@ export default function App() {
     window.history.pushState({}, "", "/");
   }
 
-  // ── Loading ───────────────────────────────────────────────────────────────
   if (isLoading && !resumeData) return (
     <div style={styles.centered}>
       <div style={styles.spinner} />
@@ -97,7 +96,6 @@ export default function App() {
     </div>
   );
 
-  // ── Error ─────────────────────────────────────────────────────────────────
   if (initError) return (
     <div style={styles.centered}>
       <p style={styles.errorLabel}>{initError}</p>
@@ -107,15 +105,15 @@ export default function App() {
     </div>
   );
 
-  // ── Recruiter view (no API key gate, no editing tools) ────────────────────
+  //  Recruiter view 
   if (view === "recruiter" && resumeData) {
     return <RecruiterView resumeData={resumeData} shareId={shareId} />;
   }
 
-  // ── API Key Gate ──────────────────────────────────────────────────────────
+  //  API Key Gate 
   if (!apiKey) return <ApiKeyGate onKeySubmit={(k) => setApiKey(k)} />;
 
-  // ── Upload screen ─────────────────────────────────────────────────────────
+  //  Upload screen 
   if (!resumeData) return (
     <UploadScreen
       onFileSelect={handleFileSelect}
@@ -124,7 +122,7 @@ export default function App() {
     />
   );
 
-  // ── Candidate Dashboard ───────────────────────────────────────────────────
+  //  Candidate Dashboard 
   return (
     <div style={styles.dashboard}>
       <div style={styles.grid} />
