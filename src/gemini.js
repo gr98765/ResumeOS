@@ -122,7 +122,7 @@ Resume text:
 ${rawText}`;
 
     const raw = await callGemini(
-        "gemini-2.5-flash-lite-preview-06-17", // cheapest free model — saves quota
+        "gemini-2.0-flash-lite", // cheapest free model — saves quota
         systemPrompt,
         userMessage
     );
@@ -170,7 +170,7 @@ Ask ONE behavioral or technical interview question at a time, personalized to th
 
     // Use the smarter Flash model for chat (better reasoning)
     return await callGeminiChat(
-        "gemini-2.5-flash",
+        "gemini-2.0-flash",
         systemPrompts[mode],
         history
     );
@@ -249,7 +249,7 @@ Bullets to score:
 ${JSON.stringify(bullets, null, 2)}`;
 
     const raw = await callGemini(
-        "gemini-2.5-flash",
+        "gemini-2.0-flash",
         systemPrompt,
         userMessage
     );
