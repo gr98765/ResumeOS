@@ -24,7 +24,7 @@ async function callGroq(systemPrompt, userMessage, temperature = 0.7) {
         body: JSON.stringify({
             model: MODEL,
             temperature,
-            max_tokens: 2048,
+            max_tokens: 4096,
             messages: [
                 { role: "system", content: systemPrompt },
                 { role: "user", content: userMessage },
@@ -54,7 +54,7 @@ async function callGroqChat(systemPrompt, history, temperature = 0.8) {
         body: JSON.stringify({
             model: MODEL,
             temperature,
-            max_tokens: 2048,
+            max_tokens: 4096,
             messages: [
                 { role: "system", content: systemPrompt },
                 ...history.map(m => ({
