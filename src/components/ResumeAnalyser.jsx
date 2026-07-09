@@ -3,9 +3,9 @@ import { useState } from "react";
 import { analyseResume } from "../gemini.js";
 
 const scoreConfig = {
-  strong:   { label: "Strong",   emoji: "✅", color: "#00f5a0", bg: "rgba(0,245,160,0.08)",   border: "rgba(0,245,160,0.25)"  },
-  weak:     { label: "Weak",     emoji: "⚠️", color: "#f59e0b", bg: "rgba(245,158,11,0.08)",  border: "rgba(245,158,11,0.3)"  },
-  critical: { label: "Critical", emoji: "❌", color: "#f87171", bg: "rgba(248,113,113,0.08)", border: "rgba(248,113,113,0.3)" },
+  strong:   { label: "Strong",   color: "#00f5a0", bg: "rgba(0,245,160,0.08)",   border: "rgba(0,245,160,0.25)"  },
+  weak:     { label: "Weak",      color: "#f59e0b", bg: "rgba(245,158,11,0.08)",  border: "rgba(245,158,11,0.3)"  },
+  critical: { label: "Critical",  color: "#f87171", bg: "rgba(248,113,113,0.08)", border: "rgba(248,113,113,0.3)" },
 };
 
 const dimensionLabels = {

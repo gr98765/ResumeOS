@@ -73,7 +73,7 @@ async function callGroqChat(systemPrompt, history, temperature = 0.8) {
     return data.choices?.[0]?.message?.content || "";
 }
 
-// ── 1. parseResume ────────────────────────────────────────────────────────────
+// ── 1. parseResume 
 export async function parseResume(rawText) {
     const sys = `You are a resume parser. You must respond with ONLY a valid JSON object. No text before or after. 
 No markdown. No code fences. No explanation. Just the raw JSON object starting with { and ending with }.`;
@@ -106,8 +106,9 @@ Resume:
 ${rawText}`;
 
     const raw = await callGroq(sys, msg, 0.1);
-    const cleaned = raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
-    return JSON.parse(cleaned);
+    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error("No JSON found in response");
+    return JSON.parse(jsonMatch[0]);
 }
 
 // ── 2. chat — CANDIDATE mode 
@@ -158,7 +159,7 @@ IMPORTANT RULES:
     return await callGroqChat(systemPrompt, history, 0.7);
 }
 
-// ── 4. analyseResume — multi-dimension scoring ────────────────────────────────
+// ── 4. analyseResume 
 export async function analyseResume(resumeData) {
     const sys = `You are a brutally honest senior recruiter and ATS expert with 15 years experience. 
 Score resume bullets across multiple dimensions. Return ONLY valid JSON.`;
@@ -224,9 +225,10 @@ Scoring logic:
 Bullets to score:
 ${JSON.stringify(bullets, null, 2)}`;
 
-    const raw = await callGroq(sys, msg, 0.2);
-    const cleaned = raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
-    return JSON.parse(cleaned);
+    const raw = await callGroq(sys, msg, 0.1);
+    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error("No JSON found in response");
+    return JSON.parse(jsonMatch[0]);
 }
 
 // ── 5. deAIify — two-pass humaniser 
