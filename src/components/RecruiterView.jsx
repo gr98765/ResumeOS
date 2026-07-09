@@ -13,7 +13,7 @@ export default function RecruiterView({ resumeData, shareId }) {
       text: `Hi! I'm an AI assistant for ${resumeData.name}'s resume. Ask me anything — their skills, experience, projects, or how they'd fit a specific role.`,
     },
   ]);
-  const [input, setInput]     = useState("");
+  const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
   const bottomRef = useRef(null);
