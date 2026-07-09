@@ -27,7 +27,7 @@ export default function ApiKeyGate({ onKeySubmit }) {
             "Authorization": `Bearer ${trimmed}`
           },
           body: JSON.stringify({
-            model: "llama-4-scout",
+            model: "openai/gpt-oss-20b",
             max_tokens: 5,
             messages: [{ role: "user", content: "hi" }]
           })

@@ -3,7 +3,7 @@
 // Model:  "llama3-70b-8192";
 
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
-const MODEL = "llama-4-scout";
+const MODEL = "openai/gpt-oss-20b";
 
 const getApiKey = () =>
     sessionStorage.getItem("groq_api_key") ||
