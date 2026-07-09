@@ -161,10 +161,9 @@ IMPORTANT RULES:
 
 // ── 4. analyseResume 
 export async function analyseResume(resumeData) {
-    const sys = `You are a brutally honest senior recruiter and ATS expert with 15 years experience. 
-Score resume bullets across multiple dimensions. Return ONLY valid JSON.`;
+    const sys = `You are a brutally honest senior recruiter. Score resume bullets. Return ONLY valid JSON.`;
 
-    const bullets = resumeData.experience.flatMap(exp =>
+    const allBullets = resumeData.experience.flatMap(exp =>
         (exp.bullets || []).map(bullet => ({
             company: exp.company,
             title: exp.title,
@@ -172,63 +171,74 @@ Score resume bullets across multiple dimensions. Return ONLY valid JSON.`;
         }))
     );
 
-    const msg = `Score each resume bullet across ALL of these dimensions:
+    // Process in batches of 3 to avoid token limits
+    const batchSize = 3;
+    const batches = [];
+    for (let i = 0; i < allBullets.length; i += batchSize) {
+        batches.push(allBullets.slice(i, i + batchSize));
+    }
 
-1. ACTION VERB — Does it start with a strong past-tense verb? (not "Responsible for", not "Worked on")
-2. METRIC — Does it have a measurable number, percentage, or quantifiable result?
-3. IMPACT — Does it show business value (saved time, money, users, performance)?
-4. SPECIFICITY — Does it name real tech, real teams, real context? (not vague)
-5. LENGTH — Is it 15-25 words? (too short = vague, too long = rambling)
-6. STAR COMPLETENESS — Does it imply Situation/Task/Action/Result even partially?
-7. BUZZWORD PENALTY — Does it use hollow words like leveraged, spearheaded, synergized, utilized?
-8. TENSE — Correct past tense for previous roles?
+    const allScoredBullets = [];
 
-Return EXACTLY this JSON:
+    for (const batch of batches) {
+        const msg = `Score these resume bullets. Return ONLY this JSON structure, nothing else:
 {
-  "overallScore": <0-100>,
-  "summary": "<2 honest sentences about the resume overall>",
-  "atsScore": <0-100, how well this would pass ATS screening>,
-  "topStrengths": ["strength1", "strength2"],
-  "topIssues": ["issue1", "issue2"],
   "bullets": [
     {
-      "original": "<exact bullet>",
+      "original": "<exact bullet text>",
       "company": "<company>",
       "title": "<title>",
       "score": "<strong|weak|critical>",
       "dimensions": {
-        "actionVerb": <true|false>,
-        "hasMetric": <true|false>,
-        "hasImpact": <true|false>,
-        "isSpecific": <true|false>,
-        "goodLength": <true|false>,
-        "starComplete": <true|false>,
-        "hasBuzzwords": <true|false>
+        "actionVerb": true,
+        "hasMetric": false,
+        "hasImpact": true,
+        "isSpecific": true,
+        "goodLength": true,
+        "starComplete": false,
+        "hasBuzzwords": false
       },
-      "reason": "<specific one sentence why this score>",
+      "reason": "<one sentence why>",
       "starBreakdown": {
-        "situation": "<inferred or null>",
-        "task": "<inferred or null>",
+        "situation": "<or null>",
+        "task": "<or null>",
         "action": "<what they did>",
-        "result": "<outcome or null>"
+        "result": "<or null>"
       },
-      "rewrite": "<improved STAR-based bullet — natural, human-sounding, no AI buzzwords>"
+      "rewrite": "<improved bullet>"
     }
   ]
 }
 
-Scoring logic:
-- STRONG: passes 6+ dimensions
-- WEAK: passes 3-5 dimensions  
-- CRITICAL: passes 0-2 dimensions
+Bullets:
+${JSON.stringify(batch, null, 2)}`;
 
-Bullets to score:
-${JSON.stringify(bullets, null, 2)}`;
+        const raw = await callGroq(sys, msg, 0.1);
+        const jsonMatch = raw.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) continue;
+        try {
+            const parsed = JSON.parse(jsonMatch[0]);
+            if (parsed.bullets) allScoredBullets.push(...parsed.bullets);
+        } catch (e) {
+            continue;
+        }
+    }
 
-    const raw = await callGroq(sys, msg, 0.1);
-    const jsonMatch = raw.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error("No JSON found in response");
-    return JSON.parse(jsonMatch[0]);
+    // Calculate overall score
+    const total = allScoredBullets.length;
+    const strong = allScoredBullets.filter(b => b.score === "strong").length;
+    const weak = allScoredBullets.filter(b => b.score === "weak").length;
+    const critical = allScoredBullets.filter(b => b.score === "critical").length;
+    const overallScore = Math.round((strong * 100 + weak * 50 + critical * 10) / (total || 1));
+
+    return {
+        overallScore,
+        atsScore: Math.round(overallScore * 0.85),
+        summary: `${strong} strong bullets, ${weak} need work, ${critical} critical. Overall resume quality: ${overallScore >= 70 ? "good" : overallScore >= 45 ? "moderate" : "needs significant improvement"}.`,
+        topStrengths: allScoredBullets.filter(b => b.score === "strong").slice(0, 2).map(b => b.original.slice(0, 60) + "..."),
+        topIssues: allScoredBullets.filter(b => b.score === "critical").slice(0, 2).map(b => b.reason),
+        bullets: allScoredBullets,
+    };
 }
 
 // ── 5. deAIify — two-pass humaniser 
