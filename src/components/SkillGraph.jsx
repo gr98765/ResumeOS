@@ -203,7 +203,15 @@ export default function SkillGraph({ skills = [], experience = [] }) {
 
             <svg ref={svgRef} style={styles.svg} />
 
-            <p style={styles.hint}>Drag nodes · Click to select · Graph updates live</p>
+            <div style={styles.explainer}>
+                <div style={styles.explainerRow}>
+                    <span style={styles.explainerItem}>🔵 <strong>Connected nodes</strong> = skills used together in the same role</span>
+                    <span style={styles.explainerItem}>⚪ <strong>Isolated nodes</strong> = skills mentioned once, not yet tied to a major project</span>
+                </div>
+                <div style={styles.explainerRow}>
+                    <span style={styles.explainerItem}>🟢 Drag any node to explore · Click to highlight · Clusters show your strongest skill combinations</span>
+                </div>
+            </div>
         </div>
     );
 }
@@ -304,5 +312,22 @@ const styles = {
         fontFamily: "'DM Mono', monospace",
         padding: "8px 0 14px",
         margin: 0,
+    },
+    explainer: {
+        padding: "10px 20px 16px",
+        display: "flex",
+        flexDirection: "column",
+        gap: 6,
+    },
+    explainerRow: {
+        display: "flex",
+        gap: 16,
+        flexWrap: "wrap",
+    },
+    explainerItem: {
+        fontSize: 11,
+        color: "#4a5568",
+        fontFamily: "'DM Mono', monospace",
+        lineHeight: 1.6,
     },
 };
