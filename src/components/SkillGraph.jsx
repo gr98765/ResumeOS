@@ -13,7 +13,6 @@ export default function SkillGraph({ skills = [], experience = [] }) {
         if (!skills.length || !svgRef.current) return;
 
         // ── Step 1: Build graph data from skills 
-        // We create "nodes" (each skill) and "links" (connections between related skills)
         // Skills are grouped by category for coloring
         const categories = categorizeSkills(skills);
 
@@ -49,9 +48,8 @@ export default function SkillGraph({ skills = [], experience = [] }) {
 
         // ── Step 2: Set up SVG canvas 
         const container = svgRef.current.parentElement;
-        const W = container.clientWidth || 600;
-        const H = 420;
-
+        const W = container.getBoundingClientRect().width || 640;
+        const H = Math.max(420, Math.min(580, skills.length * 20 + 150));
         d3.select(svgRef.current).selectAll("*").remove();
 
         const svg = d3
@@ -61,13 +59,13 @@ export default function SkillGraph({ skills = [], experience = [] }) {
 
         // ── Step 3: Color scale by category 
         const colorMap = {
-            language: "#00f5a0",    // green — programming languages
-            framework: "#6366f1",   // indigo — frameworks/libraries
-            tool: "#f59e0b",        // amber — tools/platforms
-            database: "#ec4899",    // pink — databases
-            cloud: "#38bdf8",       // sky — cloud/infra
-            soft: "#a78bfa",        // violet — soft skills
-            other: "#94a3b8",       // gray — everything else
+            language: "#00f5a0",
+            framework: "#6366f1",
+            tool: "#f59e0b",
+            database: "#ec4899",
+            cloud: "#38bdf8",
+            soft: "#a78bfa",
+            other: "#94a3b8",
         };
 
         // ── Step 4: Create force simulation 
@@ -79,14 +77,15 @@ export default function SkillGraph({ skills = [], experience = [] }) {
                 d3
                     .forceLink(links)
                     .id((d) => d.id)
-                    .distance(80) // preferred distance between linked nodes
+                    .distance(90)
                     .strength(0.3)
             )
-            .force("charge", d3.forceManyBody().strength(-120)) // repel each other
-            .force("center", d3.forceCenter(W / 2, H / 2)) // pull toward center
-            .force("collision", d3.forceCollide().radius((d) => d.size + 8)); // prevent overlap
-
-        // ── Step 5: Draw links (lines between connected skills) ───────────────────
+            .force("charge", d3.forceManyBody().strength(-400))
+            .force("center", d3.forceCenter(W / 2, H / 2))
+            .force("collision", d3.forceCollide().radius((d) => d.size + 20))
+            .force("x", d3.forceX(W / 2).strength(0.05))
+            .force("y", d3.forceY(H / 2).strength(0.05));
+        // ── Step 5: Draw links (lines between connected skills) 
         const link = svg
             .append("g")
             .selectAll("line")
@@ -95,7 +94,7 @@ export default function SkillGraph({ skills = [], experience = [] }) {
             .attr("stroke", "rgba(255,255,255,0.08)")
             .attr("stroke-width", 1);
 
-        // ── Step 6: Draw nodes (skill circles + labels) ───────────────────────────
+        // ── Step 6: Draw nodes (skill circles + labels) 
         const node = svg
             .append("g")
             .selectAll("g")
@@ -108,7 +107,7 @@ export default function SkillGraph({ skills = [], experience = [] }) {
                     .drag()
                     .on("start", (event, d) => {
                         if (!event.active) simulation.alphaTarget(0.3).restart();
-                        d.fx = d.x; // fix position while dragging
+                        d.fx = d.x;
                         d.fy = d.y;
                     })
                     .on("drag", (event, d) => {
@@ -117,7 +116,7 @@ export default function SkillGraph({ skills = [], experience = [] }) {
                     })
                     .on("end", (event, d) => {
                         if (!event.active) simulation.alphaTarget(0);
-                        d.fx = null; // release fixed position
+                        d.fx = null;
                         d.fy = null;
                     })
             )
@@ -152,7 +151,7 @@ export default function SkillGraph({ skills = [], experience = [] }) {
             .attr("font-family", "'DM Mono', monospace")
             .attr("pointer-events", "none");
 
-        // ── Step 7: Animate! Each "tick" updates positions ────────────────────────
+        // ── Step 7: Animate! Each "tick" updates positions
         simulation.on("tick", () => {
             link
                 .attr("x1", (d) => d.source.x)
@@ -209,7 +208,7 @@ export default function SkillGraph({ skills = [], experience = [] }) {
     );
 }
 
-// ── Skill categorizer ─────────────────────────────────────────────────────────
+// ── Skill categorizer 
 // Simple keyword-based categorization. Not perfect, but good enough.
 function categorizeSkills(skills) {
     const map = {};
