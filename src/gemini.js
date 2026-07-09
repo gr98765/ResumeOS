@@ -1,16 +1,16 @@
 // gemini.js — All AI calls via Groq API
 // Free tier: 14,400 requests/day, no credit card needed
-// Model: llama-3.3-70b-versatile
+// Model:  "llama3-70b-8192";
 
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
-const MODEL = "llama-3.3-70b-versatile";
+const MODEL = "llama3-70b-8192";
 
 const getApiKey = () =>
     sessionStorage.getItem("groq_api_key") ||
     import.meta.env.VITE_GROQ_API_KEY ||
     "";
 
-// ── Core fetch helper ─────────────────────────────────────────────────────────
+// ── Core fetch helper
 async function callGroq(systemPrompt, userMessage, temperature = 0.7) {
     const key = getApiKey();
     if (!key) throw new Error("No API key found. Please enter your Groq API key.");
@@ -40,7 +40,7 @@ async function callGroq(systemPrompt, userMessage, temperature = 0.7) {
     return data.choices?.[0]?.message?.content || "";
 }
 
-// ── Multi-turn chat helper ────────────────────────────────────────────────────
+// ── Multi-turn chat helper 
 async function callGroqChat(systemPrompt, history, temperature = 0.8) {
     const key = getApiKey();
     if (!key) throw new Error("No API key found.");
@@ -110,7 +110,7 @@ ${rawText}`;
     return JSON.parse(cleaned);
 }
 
-// ── 2. chat — CANDIDATE mode (honest, direct) ─────────────────────────────────
+// ── 2. chat — CANDIDATE mode 
 export async function chat(resumeData, history, mode = "general") {
     const ctx = JSON.stringify(resumeData, null, 2);
 
@@ -138,7 +138,7 @@ Ask ONE question at a time personalised to their actual experience. Reference sp
     return await callGroqChat(systemPrompts[mode], history);
 }
 
-// ── 3. chat — RECRUITER mode (honest but professionally framed) ───────────────
+// ── 3. chat — RECRUITER mode 
 export async function recruiterChat(resumeData, history) {
     const ctx = JSON.stringify(resumeData, null, 2);
 
@@ -229,7 +229,7 @@ ${JSON.stringify(bullets, null, 2)}`;
     return JSON.parse(cleaned);
 }
 
-// ── 5. deAIify — two-pass humaniser ──────────────────────────────────────────
+// ── 5. deAIify — two-pass humaniser 
 export async function deAIify(text, resumeData) {
     // Pass 1: identify and fix AI patterns
     const pass1 = await callGroq(
