@@ -3,26 +3,26 @@ import { useState } from "react";
 import { analyseResume } from "../gemini.js";
 
 const scoreConfig = {
-  strong:   { label: "Strong",   color: "#00f5a0", bg: "rgba(0,245,160,0.08)",   border: "rgba(0,245,160,0.25)"  },
-  weak:     { label: "Weak",      color: "#f59e0b", bg: "rgba(245,158,11,0.08)",  border: "rgba(245,158,11,0.3)"  },
-  critical: { label: "Critical",  color: "#f87171", bg: "rgba(248,113,113,0.08)", border: "rgba(248,113,113,0.3)" },
+  strong: { label: "Strong", color: "#00f5a0", bg: "rgba(0,245,160,0.08)", border: "rgba(0,245,160,0.25)" },
+  weak: { label: "Weak", color: "#f59e0b", bg: "rgba(245,158,11,0.08)", border: "rgba(245,158,11,0.3)" },
+  critical: { label: "Critical", color: "#f87171", bg: "rgba(248,113,113,0.08)", border: "rgba(248,113,113,0.3)" },
 };
 
 const dimensionLabels = {
-  actionVerb:    "Action Verb",
-  hasMetric:     "Has Metric",
-  hasImpact:     "Has Impact",
-  isSpecific:    "Specific",
-  goodLength:    "Good Length",
-  starComplete:  "STAR Method",
-  hasBuzzwords:  "No Buzzwords",
+  actionVerb: "Action Verb",
+  hasMetric: "Has Metric",
+  hasImpact: "Has Impact",
+  isSpecific: "Specific",
+  goodLength: "Good Length",
+  starComplete: "STAR Method",
+  hasBuzzwords: "No Buzzwords",
 };
 
 export default function ResumeAnalyser({ resumeData }) {
-  const [state, setState]       = useState("idle");
+  const [state, setState] = useState("idle");
   const [analysis, setAnalysis] = useState(null);
   const [openBullet, setOpenBullet] = useState(null);
-  const [applied, setApplied]   = useState({});
+  const [applied, setApplied] = useState({});
   const [errorMsg, setErrorMsg] = useState("");
 
   async function handleAnalyse() {
@@ -39,9 +39,9 @@ export default function ResumeAnalyser({ resumeData }) {
 
   const counts = analysis
     ? analysis.bullets.reduce(
-        (acc, b) => { acc[b.score] = (acc[b.score] || 0) + 1; return acc; },
-        { strong: 0, weak: 0, critical: 0 }
-      )
+      (acc, b) => { acc[b.score] = (acc[b.score] || 0) + 1; return acc; },
+      { strong: 0, weak: 0, critical: 0 }
+    )
     : null;
 
   if (state === "idle") return (
@@ -62,7 +62,7 @@ export default function ResumeAnalyser({ resumeData }) {
     <div style={styles.loadingBox}>
       <div style={styles.spinner} />
       <div style={styles.loadingText}>Scoring every bullet across 7 dimensions...</div>
-      <div style={styles.loadingSub}>Takes about 15 seconds</div>
+      <div style={styles.loadingSub}>Takes about 30 seconds,scoring in batches</div>
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
@@ -209,7 +209,7 @@ export default function ResumeAnalyser({ resumeData }) {
                       style={{ ...styles.applyBtn, ...(wasApplied ? styles.applyBtnDone : {}) }}
                       onClick={() => {
                         setApplied(prev => ({ ...prev, [i]: true }));
-                        navigator.clipboard.writeText(item.rewrite).catch(() => {});
+                        navigator.clipboard.writeText(item.rewrite).catch(() => { });
                       }}
                     >
                       {wasApplied ? "✓ Copied to clipboard" : "Use this rewrite → copies to clipboard"}

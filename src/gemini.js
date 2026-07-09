@@ -3,7 +3,7 @@
 // Model:  "llama3-70b-8192";
 
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
-const MODEL = "groq/compound";
+const MODEL = "openai/gpt-oss-120b";
 
 const getApiKey = () =>
     sessionStorage.getItem("groq_api_key") ||
@@ -160,6 +160,7 @@ IMPORTANT RULES:
 }
 
 // ── 4. analyseResume 
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 export async function analyseResume(resumeData) {
     const sys = `You are a brutally honest senior recruiter. Score resume bullets. Return ONLY valid JSON.`;
 
@@ -181,6 +182,7 @@ export async function analyseResume(resumeData) {
     const allScoredBullets = [];
 
     for (const batch of batches) {
+        await sleep(6000);
         const msg = `Score these resume bullets. Return ONLY this JSON structure, nothing else:
 {
   "bullets": [
