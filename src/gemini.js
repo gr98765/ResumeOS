@@ -75,8 +75,8 @@ async function callGroqChat(systemPrompt, history, temperature = 0.8) {
 
 // ── 1. parseResume ────────────────────────────────────────────────────────────
 export async function parseResume(rawText) {
-    const sys = `You are a precise resume parser. Return ONLY valid JSON — no markdown, no code fences, no explanation.`;
-
+    const sys = `You are a resume parser. You must respond with ONLY a valid JSON object. No text before or after. 
+No markdown. No code fences. No explanation. Just the raw JSON object starting with { and ending with }.`;
     const msg = `Parse this resume into exactly this JSON structure:
 {
   "name": "full name",
@@ -105,7 +105,7 @@ export async function parseResume(rawText) {
 Resume:
 ${rawText}`;
 
-    const raw = await callGroq(sys, msg, 0.2);
+    const raw = await callGroq(sys, msg, 0.1);
     const cleaned = raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
     return JSON.parse(cleaned);
 }
